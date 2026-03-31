@@ -1,19 +1,22 @@
 from db import get_connection
 
-async def set_budget(category: str, monthly_limit: float) -> dict:
+def set_budget(category: str, monthly_limit: float) -> dict:
     """Set a monthly spending budget for a category."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO budgets (category, monthly_limit) VALUES (?, ?) ON CONFLICT(category) DO UPDATE SET monthly_limit = ?",
+        """INSERT INTO budgets (category, monthly_limit) 
+           VALUES (%s, %s) 
+           ON CONFLICT(category) DO UPDATE SET monthly_limit = %s""",
         (category, monthly_limit, monthly_limit)
     )
     conn.commit()
+    cursor.close()
     conn.close()
     return {"success": True, "message": f"Budget for {category} set to ${monthly_limit:.2f}/month"}
 
 
-async def check_budget(category: str, month: str) -> dict:
+def check_budget(category: str, month: str) -> dict:
     """
     Check spending vs budget for a category this month.
     month format: YYYY-MM
@@ -21,14 +24,15 @@ async def check_budget(category: str, month: str) -> dict:
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT monthly_limit FROM budgets WHERE category = ?", (category,))
+    cursor.execute("SELECT monthly_limit FROM budgets WHERE category = %s", (category,))
     budget_row = cursor.fetchone()
 
     cursor.execute(
-        "SELECT SUM(total) FROM expenses WHERE category = ? AND date LIKE ?",
+        "SELECT SUM(total) FROM expenses WHERE category = %s AND date LIKE %s",
         (category, f"{month}%")
     )
     spent_row = cursor.fetchone()
+    cursor.close()
     conn.close()
 
     spent = spent_row[0] or 0.0
@@ -38,7 +42,6 @@ async def check_budget(category: str, month: str) -> dict:
     limit = budget_row[0]
     remaining = limit - spent
     pct = (spent / limit) * 100
-
     status = "ok" if pct < 80 else ("warning" if pct < 100 else "over budget")
 
     return {
