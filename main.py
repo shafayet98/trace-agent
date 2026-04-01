@@ -5,6 +5,7 @@ from awslabs.mcp_lambda_handler import MCPLambdaHandler
 from tools.extract import extract_receipt
 from tools.expenses import save_expense, get_expenses, get_summary
 from tools.budget import set_budget, check_budget
+import json
 
 mcp = MCPLambdaHandler(name="Trace Agent", version="1.0.0")
 
@@ -16,4 +17,13 @@ mcp.tool()(set_budget)
 mcp.tool()(check_budget)
 
 def lambda_handler(event, context):
+    # Handle missing body (GET requests from claude.ai health checks)
+    if 'body' not in event or event.get('body') is None:
+        event['body'] = '{}'
+    
+    # Add httpMethod if missing
+    if 'httpMethod' not in event:
+        http_ctx = event.get('requestContext', {}).get('http', {})
+        event['httpMethod'] = http_ctx.get('method', 'POST')
+
     return mcp.handle_request(event, context)
