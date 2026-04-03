@@ -10,6 +10,10 @@ The HTTP entry point is `lambda_handler` in `main.py`, wired through [`awslabs-m
 - **Persistence** — Inserts and queries rows in Postgres; schema is created automatically on startup (see `db.py`).
 - **Budgets** — Upsert a monthly limit per category and compare actual spend for a given `YYYY-MM` month.
 
+## Demo
+![Project Screenshot](trace_agent_demo.jpeg)
+
+
 ## MCP tools
 
 | Tool | Role |
